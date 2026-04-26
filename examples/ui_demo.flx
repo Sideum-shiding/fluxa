@@ -1,0 +1,35 @@
+import fluxaui
+
+func main() -> Void:
+    print("Testing Fluxa UI Library")
+    
+    # Test basic UI functions
+    title("Fluxa UI Demo")
+    section("Basic Functions")
+    text("This demonstrates the UI library")
+    field("Status", "Running")
+    button("OK")
+    success("Demo completed")
+    warning("This is just a demo")
+    error("No real errors here")
+    
+    card("Demo Card", "This is a sample card with content")
+    
+    # Test input
+    let name = prompt("Enter your name")
+    success("Hello " + name)
+    
+    # Test progress bar
+    progress_bar(25, 100, 20)
+    progress_bar(50, 100, 20)
+    progress_bar(75, 100, 20)
+    progress_bar(100, 100, 20)
+    
+    # Test confirm
+    if confirm("Do you want to see an alert?"):
+        alert("This is a test alert message")
+        success("Alert shown")
+    else:
+        warning("Alert cancelled")
+    
+    success("UI Demo completed!")

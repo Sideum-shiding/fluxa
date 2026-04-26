@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Fluxa Current File",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\fluxa.exe",
+      "args": [
+        "run",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

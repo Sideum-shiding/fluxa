@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "*.flx": "fluxa"
+  },
+  "code-runner.runInTerminal": true,
+  "code-runner.saveFileBeforeRun": true,
+  "code-runner.clearPreviousOutput": true,
+  "code-runner.executorMapByFileExtension": {
+    ".flx": "& \".\\\\fluxa.exe\" run"
+  }
+}

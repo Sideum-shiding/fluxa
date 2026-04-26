@@ -1,0 +1,98 @@
+{
+  "name": "fluxa-language",
+  "displayName": "Fluxa Language",
+  "description": "Language support for Fluxa in Visual Studio Code.",
+  "version": "0.1.0",
+  "publisher": "fluxa",
+  "license": "MIT",
+  "icon": "assets/fluxa-extension-icon.png",
+  "keywords": [
+    "fluxa",
+    "language",
+    "programming",
+    "syntax"
+  ],
+  "categories": [
+    "Programming Languages"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:fluxa",
+    "workspaceContains:**/*.flx"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://example.com/fluxa-language.git"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "fluxa",
+        "aliases": [
+          "Fluxa",
+          "fluxa"
+        ],
+        "extensions": [
+          ".flx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fluxa",
+        "scopeName": "source.fluxa",
+        "path": "./syntaxes/fluxa.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "fluxa",
+        "path": "./snippets/fluxa.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "fluxa.checkFile",
+        "title": "Fluxa: Check Current File"
+      }
+    ],
+    "configuration": {
+      "title": "Fluxa",
+      "properties": {
+        "fluxa.executablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to fluxa.exe. Leave empty to auto-detect it in the workspace root."
+        },
+        "fluxa.validateOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate Fluxa files when they are saved."
+        },
+        "fluxa.validateOnOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate Fluxa files when they are opened."
+        }
+      }
+    },
+    "iconThemes": [
+      {
+        "id": "fluxa-file-icons",
+        "label": "Fluxa File Icons",
+        "path": "./fileicons/fluxa-icon-theme.json"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.6.2"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "Main Function": {
+    "prefix": "main",
+    "body": [
+      "async func main() -> Void:",
+      "    $1",
+      "",
+      "run(main())"
+    ],
+    "description": "Create an async Fluxa entry point"
+  },
+  "Function": {
+    "prefix": "func",
+    "body": [
+      "func ${1:name}(${2:value}: ${3:Int}) -> ${4:Void}:",
+      "    $0"
+    ],
+    "description": "Create a Fluxa function"
+  },
+  "Async Function": {
+    "prefix": "asyncfunc",
+    "body": [
+      "async func ${1:name}() -> ${2:Void}:",
+      "    $0"
+    ],
+    "description": "Create an async Fluxa function"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition}:",
+      "    $0"
+    ],
+    "description": "Create a Fluxa if block"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": [
+      "for ${1:item} in ${2:range(0, 10)}:",
+      "    $0"
+    ],
+    "description": "Create a Fluxa for loop"
+  },
+  "Struct": {
+    "prefix": "struct",
+    "body": [
+      "struct ${1:User}:",
+      "    ${2:name}: ${3:String}",
+      "",
+      "    func ${4:describe}(self) -> String:",
+      "        return ${5:\"User: \" + self.name}"
+    ],
+    "description": "Create a Fluxa struct"
+  }
+}

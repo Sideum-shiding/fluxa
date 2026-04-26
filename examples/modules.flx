@@ -1,0 +1,7 @@
+func main() -> Void:
+    import math
+    from helpers import square
+
+    let value: Int = 9
+    print("sqrt =", math.sqrt(value))
+    print("square =", square(value))

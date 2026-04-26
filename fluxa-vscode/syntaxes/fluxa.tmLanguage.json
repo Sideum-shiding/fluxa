@@ -1,0 +1,138 @@
+{
+  "name": "Fluxa",
+  "scopeName": "source.fluxa",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#structs"
+    },
+    {
+      "include": "#decorative"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.fluxa",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.fluxa",
+          "match": "\\b(let|func|async|await|return|if|else|while|for|in|import|from|struct)\\b"
+        },
+        {
+          "name": "constant.language.fluxa",
+          "match": "\\b(true|false|null)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.fluxa",
+          "match": "\\b(Int|Float|String|Bool|Void|Any|List|Dict|Module|Struct|Instance)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.fluxa",
+          "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.fluxa",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.fluxa",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.fluxa",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.fluxa",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "storage.modifier.async.fluxa",
+          "match": "\\basync\\b"
+        },
+        {
+          "name": "storage.type.function.fluxa",
+          "match": "\\bfunc\\b"
+        },
+        {
+          "captures": {
+            "1": {
+              "name": "entity.name.function.fluxa"
+            }
+          },
+          "match": "\\b(?:async\\s+)?func\\s+([A-Za-z_][A-Za-z0-9_]*)\\b"
+        }
+      ]
+    },
+    "structs": {
+      "patterns": [
+        {
+          "name": "storage.type.struct.fluxa",
+          "match": "\\bstruct\\b"
+        },
+        {
+          "captures": {
+            "1": {
+              "name": "entity.name.type.fluxa"
+            }
+          },
+          "match": "\\bstruct\\s+([A-Za-z_][A-Za-z0-9_]*)\\b"
+        }
+      ]
+    },
+    "decorative": {
+      "patterns": [
+        {
+          "name": "keyword.operator.fluxa",
+          "match": "==|!=|<=|>=|=|\\+|\\-|\\*|/|\\.|:"
+        }
+      ]
+    }
+  }
+}

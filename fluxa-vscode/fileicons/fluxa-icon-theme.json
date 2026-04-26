@@ -1,0 +1,13 @@
+{
+  "iconDefinitions": {
+    "_fluxaFile": {
+      "iconPath": "../assets/fluxa-extension-icon.svg"
+    }
+  },
+  "fileExtensions": {
+    "flx": "_fluxaFile"
+  },
+  "languageIds": {
+    "fluxa": "_fluxaFile"
+  }
+}

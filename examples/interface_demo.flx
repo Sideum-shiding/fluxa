@@ -1,0 +1,13 @@
+func main() -> Void:
+    import fluxaui
+
+    fluxaui.title("Fluxa UI Demo")
+    fluxaui.text("This interface is built with the FluxaUI library.")
+    fluxaui.section("Project")
+    fluxaui.field("Language", "Fluxa")
+    fluxaui.field("Entry point", "main")
+    fluxaui.field("Runtime", "Standalone")
+    fluxaui.section("Status")
+    fluxaui.success("Library loaded")
+    fluxaui.button("Continue")
+    fluxaui.card("Hint", "Use FluxaUI to make terminal interfaces for your apps.")

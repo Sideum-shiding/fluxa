@@ -1,0 +1,51 @@
+import math
+import io
+import strings
+
+func main() -> Void:
+    # Declare variables first (C++-style), then read input into them
+    # If a test input file exists, read inputs from it (one per line)
+    if io.exists("test_input.txt"):
+        let raw: String = io.read("test_input.txt")
+        let parts: List<String> = strings.split(raw, "\n")
+        let s1: String = parts[0]
+        let s2: String = parts[1]
+        let op: String = parts[2]
+    else:
+        print("Enter first number:")
+        let s1: String = input("")
+        print("Enter second number:")
+        let s2: String = input("")
+        print("Введите операцию (+, -, *, /):")
+        let op: String = input("")
+
+    let x: Int = s1.to_int()
+    let y: Int = s2.to_int()
+    if op == "+":
+        print("Result =", add(x, y))
+    else:
+        if op == "-":
+            print("Result =", subtract(x, y))
+        else:
+            if op == "*":
+                print("Result =", multiply(x, y))
+            else:
+                if op == "/":
+                    print("Result =", divide(x.to_float(), y.to_float()))
+                else:
+                    print("Operation not supported: " + op)
+
+func add(a: Int, b: Int) -> Int:
+    return a + b
+
+func subtract(a: Int, b: Int) -> Int:
+    return a - b
+
+func multiply(a: Int, b: Int) -> Int:
+    return a * b
+
+func divide(a: Float, b: Float) -> Float:
+    if b == 0:
+        print("Cannot divide by zero")
+        return 0.0
+    return a / b

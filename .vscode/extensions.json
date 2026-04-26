@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "formulahendry.code-runner",
+    "ms-vscode.extension-development",
+    "ms-vscode.cpptools"
+  ]
+}

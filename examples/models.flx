@@ -1,0 +1,10 @@
+func main() -> Void:
+    let user = User("Mira", 28)
+    print(user.greeting())
+
+struct User:
+    name: String
+    age: Int = 0
+
+    func greeting(self) -> String:
+        return "Hi, " + self.name

@@ -1,0 +1,16 @@
+import asyncs
+
+async func main() -> Void:
+    let task1: String = "Learn Fluxa"
+    let task2: String = "Build app"
+    
+    print("Enter your name:")
+    let name: String = input("")
+    
+    await process_task(task1)
+    await process_task(task2)
+    print("Hello " + name + ", all tasks processed!")
+
+async func process_task(task: String) -> Void:
+    print("Processing " + task)
+    await asyncs.sleep(0.5)

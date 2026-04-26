@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fluxa Learn</title>
+    <meta
+      name="description"
+      content="Обучающая страница по языку программирования Fluxa: синтаксис, main, async/await, модули, структуры и CLI."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <div class="brand-mark">F</div>
+            <div>
+              <div class="brand-name">Fluxa</div>
+              <div class="brand-subtitle">Learn the language</div>
+            </div>
+          </div>
+          <div class="topbar-links">
+            <a href="#start">Старт</a>
+            <a href="#syntax">Синтаксис</a>
+            <a href="#ui">Библиотека UI</a>
+            <a href="#stdlib">Stdlib</a>
+            <a href="#async">Async</a>
+            <a href="#modules">Модули</a>
+            <a href="#packages">Пакеты</a>
+            <a href="#cli">CLI</a>
+          </div>
+        </nav>
+
+        <section class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Язык программирования Fluxa</p>
+            <h1>Чистый путь в язык, где всё начинается с <code>main</code>.</h1>
+            <p class="lead">
+              Эта страница обучает основам Fluxa: как устроен синтаксис, как писать
+              функции, как работать с async/await, модулями и структурами, и как
+              запускать код через CLI.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#first-program">Начать обучение</a>
+              <a class="button secondary" href="#examples">Смотреть примеры</a>
+            </div>
+            <ul class="hero-points">
+              <li>Понятный Python-подобный синтаксис</li>
+              <li>Статическая типизация с аннотациями</li>
+              <li>Автоматический вход через <code>main</code></li>
+            </ul>
+          </div>
+
+          <div class="hero-card">
+            <div class="card-topline">Первый файл Fluxa</div>
+            <pre><code>func main() -&gt; Void:
+    let b: Int = 12
+    print(b)</code></pre>
+            <div class="hero-note">
+              В Fluxa запускаемый файл должен начинаться с <code>main</code>.
+              Интерпретатор вызывает его автоматически.
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <main class="content">
+        <aside class="sidebar">
+          <div class="sidebar-card">
+            <div class="sidebar-title">Карта обучения</div>
+            <a href="#start">1. Что такое Fluxa</a>
+            <a href="#first-program">2. Первый файл</a>
+            <a href="#syntax">3. Синтаксис</a>
+            <a href="#ui">4. Библиотека UI</a>
+            <a href="#stdlib">5. Стандартная библиотека</a>
+            <a href="#async">6. Async/await</a>
+            <a href="#modules">7. Модули</a>
+            <a href="#packages">8. Пакеты</a>
+            <a href="#cli">9. CLI</a>
+            <a href="#full-example">10. Полный пример</a>
+            <a href="#examples">11. Примеры</a>
+          </div>
+        </aside>
+
+        <div class="main-column">
+          <section id="start" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Старт</p>
+              <h2>Что такое Fluxa</h2>
+            </div>
+            <div class="card-grid three">
+              <article class="info-card">
+                <h3>Простой синтаксис</h3>
+                <p>Отступы, двоеточия, читаемые блоки и минимум шума.</p>
+              </article>
+              <article class="info-card">
+                <h3>Статические типы</h3>
+                <p><code>Int</code>, <code>Float</code>, <code>String</code>, <code>Bool</code> и другие типы языка.</p>
+              </article>
+              <article class="info-card">
+                <h3>Нативный рантайм</h3>
+                <p>Fluxa запускается через собственный <code>fluxa.exe</code>, без Python.</p>
+              </article>
+            </div>
+          </section>
+
+          <section id="first-program" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Первый шаг</p>
+              <h2>Первый файл и правило <code>main</code></h2>
+            </div>
+            <div class="two-column">
+              <div class="article-card">
+                <p>
+                  В Fluxa исполняемый файл должен содержать функцию
+                  <code>main</code> как первое не-import выражение верхнего уровня. Импорты можно размещать в начале.
+                </p>
+                <p>
+                  Верхнеуровневые объявления функций, структур и импортов допустимы,
+                  но действия вроде <code>print(...)</code> и <code>let ...</code>
+                  нужно переносить внутрь <code>main</code>.
+                </p>
+              </div>
+              <div class="code-panel">
+                <div class="code-topline">
+                  <span>hello.flx</span>
+                  <button class="copy-button" data-copy-target="hello-snippet">Скопировать</button>
+                </div>
+                <pre id="hello-snippet"><code>import math
+
+func main() -&gt; Void:
+    print("Hello, Fluxa!")</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="syntax" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Синтаксис</p>
+              <h2>Базовые конструкции языка</h2>
+            </div>
+
+            <div class="lesson-list">
+              <article class="lesson-card">
+                <h3>Переменные</h3>
+                <p><code>let</code> для неизменяемых, <code>var</code> для изменяемых.</p>
+                <pre><code>func main() -&gt; Void:
+    let name: String = "Mira"
+    var age: Int = 20
+    age = 21  # ok
+    name = "Anna"  # ошибка</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Функции</h3>
+                <p>Объявляй функции отдельно и вызывай их из <code>main</code>.</p>
+                <pre><code>func main() -&gt; Void:
+    print(add(2, 3))
+
+func add(a: Int, b: Int) -&gt; Int:
+    return a + b</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Условия</h3>
+                <p>Условия строятся так же, как в Python: через двоеточие и отступы.</p>
+                <pre><code>func main() -&gt; Void:
+    let score: Int = 91
+
+    if score &gt;= 90:
+        print("excellent")
+    else:
+        print("keep going")</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Циклы</h3>
+                <p>Поддерживаются <code>for</code> и <code>while</code>.</p>
+                <pre><code>func main() -&gt; Void:
+    for i in range(0, 3):
+        print(i)
+
+    let counter: Int = 2
+    while counter &gt; 0:
+        print(counter)
+        counter = counter - 1</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Коллекции</h3>
+                <p><code>List&lt;T&gt;</code> и <code>Map&lt;K, V&gt;</code> с методами.</p>
+                <pre><code>func main() -&gt; Void:
+    let nums: List&lt;Int&gt; = [1, 2, 3]
+    nums.append(4)
+    print(nums.length)
+
+    let user: Map&lt;String, Int&gt; = {"age": 20}
+    print(user["age"])</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Строки</h3>
+                <p>Интерполяция и методы строк.</p>
+                <pre><code>func main() -&gt; Void:
+    let name: String = "Mira"
+    print("Hello {name}")
+    print(name.length)
+    let num: Int = "42".to_int()</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Обработка ошибок</h3>
+                <p><code>try/catch</code> для исключений.</p>
+                <pre><code>func main() -&gt; Void:
+    try:
+        throw "Error!"
+    catch e:
+        print(e)</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Структуры</h3>
+                <p>Для моделей данных используй <code>struct</code> с методами.</p>
+                <pre><code>func main() -&gt; Void:
+    let user = User("Mira", 28)
+    print(user.greet())
+
+struct User:
+    name: String
+    age: Int = 0
+
+    func greet(self) -&gt; String:
+        return "Hi, " + self.name</code></pre>
+              </article>
+
+              <article class="lesson-card">
+                <h3>Optional типы</h3>
+                <p>Nullable типы с <code>?</code>.</p>
+                <pre><code>func main() -&gt; Void:
+    let name: String? = nil
+    if name != nil:
+        print(name)</code></pre>
+              </article>
+            </div>
+          </section>
+
+          <section id="ui" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Библиотека</p>
+              <h2>Библиотека интерфейсов Fluxa UI</h2>
+            </div>
+            <div class="two-column">
+              <div class="article-card">
+                <p>
+                  Библиотека <code>fluxaui</code> предоставляет функции для создания
+                  текстовых интерфейсов: заголовки, разделы, поля, кнопки и сообщения.
+                </p>
+                <p>
+                  Для ввода от пользователя используйте функцию <code>input</code> или
+                  <code>prompt</code> из библиотеки. Сначала объявите переменную,
+                  затем вызовите ввод.
+                </p>
+              </div>
+              <div class="code-panel">
+                <div class="code-topline">
+                  <span>fluxaui.flx</span>
+                  <button class="copy-button" data-copy-target="ui-snippet">Скопировать</button>
+                </div>
+                <pre id="ui-snippet"><code>import strings
+
+func line(width: Int) -&gt; String:
+    import strings
+    return strings.repeat("=", width)
+
+func title(text: String) -&gt; Void:
+    print("")
+    print(line(52))
+    print("  " + text)
+    print(line(52))
+
+func prompt(label: String) -&gt; String:
+    return input(label + ": ")
+
+func main() -&gt; Void:
+    let x: Int = 0
+    let input_str: String = prompt("Enter a number")
+    x = input_str.to_int()
+    print("[ok] You entered: " + x.to_string())</code></pre>
+              </div>
+            </div>
+            <div class="lesson-list">
+              <article class="lesson-card">
+                <h3>Объявление переменных</h3>
+                <p>Переменные объявляются через <code>let</code> с указанием типа.</p>
+                <pre><code>let x: Int</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Ввод от пользователя</h3>
+                <p>Используйте <code>input</code> для чтения строки.</p>
+                <pre><code>let name: String = input("Enter your name: ")</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Меню выбора</h3>
+                <p>Функция <code>menu</code> для интерактивных меню.</p>
+                <pre><code>let choice = menu("Main Menu", ["Option 1", "Option 2"])
+print("Selected: " + choice.to_string())</code></pre>
+                <p><em>Примечание: Требует реализации списков в runtime</em></p>
+              </article>
+              <article class="lesson-card">
+                <h3>Формы</h3>
+                <p>Сбор данных через <code>form</code>.</p>
+                <pre><code>let data = form(["Name", "Age"])
+print(data["Name"])</code></pre>
+                <p><em>Примечание: Требует реализации списков в runtime</em></p>
+              </article>
+              <article class="lesson-card">
+                <h3>Прогресс-бар</h3>
+                <p>Отображение прогресса.</p>
+                <pre><code>progress_bar(50, 100, 20)</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Таблицы</h3>
+                <p>Вывод табличных данных.</p>
+                <pre><code>table(["Name", "Age"], [["Alice", "25"], ["Bob", "30"]])</code></pre>
+                <p><em>Примечание: Требует реализации списков в runtime</em></p>
+              </article>
+              <article class="lesson-card">
+                <h3>Подтверждения</h3>
+                <p>Да/нет вопросы.</p>
+                <pre><code>if confirm("Continue?"):
+    print("Yes")</code></pre>
+              </article>
+            </div>
+          </section>
+
+            <section id="full-example" class="full-example">
+              <h2>Полный пример приложения</h2>
+              <p>Пример консольного приложения с использованием UI библиотеки:</p>
+              <pre><code>import fluxaui
+
+func main() -> Void:
+    title("Добро пожаловать в демонстрационное приложение!")
+    
+    section("Основные функции")
+    text("Это демонстрация возможностей UI библиотеки Fluxa")
+    
+    let name = prompt("Введите ваше имя")
+    field("Имя пользователя", name)
+    
+    success("Привет, " + name + "!")
+    
+    progress_bar(0, 100, 10)
+    text("Обработка данных...")
+    progress_bar(50, 100, 10)
+    text("Сохранение...")
+    progress_bar(100, 100, 10)
+    
+    if confirm("Показать дополнительную информацию?"):
+        card("Информация", "Это пример использования UI компонентов")
+        success("Информация показана")
+    else:
+        warning("Информация скрыта")
+    
+    alert("Демонстрация завершена")
+    success("Спасибо за использование приложения!")</code></pre>
+            </section>
+
+          <section id="stdlib" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Библиотека</p>
+              <h2>Стандартная библиотека Fluxa</h2>
+            </div>
+            <div class="lesson-list">
+              <article class="lesson-card">
+                <h3>Математика</h3>
+                <p>Модуль <code>math</code> для вычислений.</p>
+                <pre><code>import math
+
+func main() -&gt; Void:
+    print(math.sqrt(9))
+    print(math.sin(math.pi))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Случайные числа</h3>
+                <p>Модуль <code>random</code>.</p>
+                <pre><code>import random
+
+func main() -&gt; Void:
+    print(random.int(1, 10))
+    print(random.choice([1, 2, 3]))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Строки</h3>
+                <p>Расширенные методы строк.</p>
+                <pre><code>func main() -&gt; Void:
+    print("hello".upper())
+    print("a,b,c".split(","))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Коллекции</h3>
+                <p><code>List</code>, <code>Map</code>, <code>Set</code>.</p>
+                <pre><code>func main() -&gt; Void:
+    let s: Set&lt;Int&gt; = {1, 2, 3}
+    s.add(4)
+    print(s.contains(2))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Файлы</h3>
+                <p>Работа с файлами через <code>io</code>.</p>
+                <pre><code>import io
+
+func main() -&gt; Void:
+    io.write("test.txt", "Hello")
+    print(io.read("test.txt"))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>JSON</h3>
+                <p>Парсинг и сериализация.</p>
+                <pre><code>import json
+
+func main() -&gt; Void:
+    let data = json.parse('{"a": 1}')
+    print(json.stringify(data))</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Массивы</h3>
+                <p>Векторные операции как в numpy.</p>
+                <pre><code>import arrays
+
+func main() -&gt; Void:
+    let a = arrays.array([1, 2, 3])
+    let b = a * 2
+    print(b.sum())</code></pre>
+              </article>
+              <article class="lesson-card">
+                <h3>Функциональное программирование</h3>
+                <p>Методы на коллекциях.</p>
+                <pre><code>func main() -&gt; Void:
+    let nums = [1, 2, 3]
+    let doubled = nums.map(x -&gt; x * 2)
+    print(doubled)</code></pre>
+              </article>
+            </div>
+          </section>
+
+          <section id="async" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Async</p>
+              <h2>Асинхронный код через <code>async</code> и <code>await</code></h2>
+            </div>
+            <div class="two-column">
+              <div class="article-card">
+                <p>
+                  Если точка входа асинхронная, можно сделать её
+                  <code>async func main() -&gt; Void:</code>. Fluxa вызовет её сам.
+                </p>
+                <p>
+                  Модуль <code>asyncs</code> даёт простую функцию
+                  <code>sleep</code> для демонстрации пауз и ожидания.
+                </p>
+              </div>
+              <div class="code-panel">
+                <div class="code-topline">
+                  <span>async_demo.flx</span>
+                  <button class="copy-button" data-copy-target="async-snippet">Скопировать</button>
+                </div>
+                <pre id="async-snippet"><code>async func main() -&gt; Void:
+    let message: String = await fetch_message()
+    print(message)
+
+async func fetch_message() -&gt; String:
+    import asyncs
+    print("Loading...")
+    await asyncs.sleep(1.0)
+    return "Data received"</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="modules" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Модули</p>
+              <h2>Импорты и стандартная библиотека</h2>
+            </div>
+            <div class="card-grid two">
+              <article class="info-card">
+                <h3>Стандартные модули</h3>
+                <p><code>math</code>, <code>strings</code>, <code>io</code>, <code>asyncs</code>, <code>collections</code>.</p>
+              </article>
+              <article class="info-card">
+                <h3>Импорты</h3>
+                <p>Импорты на верхнем уровне: <code>import io</code>, <code>from helpers import func</code>.</p>
+              </article>
+            </div>
+            <div class="code-panel wide">
+              <div class="code-topline">
+                <span>modules.flx</span>
+                <button class="copy-button" data-copy-target="modules-snippet">Скопировать</button>
+              </div>
+              <pre id="modules-snippet"><code>import math
+from helpers import square
+
+func main() -&gt; Void:
+    let value: Int = 9
+    print("sqrt =", math.sqrt(value))
+    print("square =", square(value))</code></pre>
+            </div>
+          </section>
+
+          <section id="packages" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Пакеты</p>
+              <h2>Менеджер пакетов Fluxa</h2>
+            </div>
+            <div class="two-column">
+              <div class="article-card">
+                <p>
+                  Fluxa поддерживает установку пакетов через менеджер пакетов.
+                  Пакеты хранятся в <code>fluxa_modules/</code>.
+                </p>
+                <p>
+                  Зависимости указываются в <code>fluxa.json</code>.
+                </p>
+              </div>
+              <div class="code-panel">
+                <div class="code-topline">
+                  <span>fluxa.json</span>
+                  <button class="copy-button" data-copy-target="package-snippet">Скопировать</button>
+                </div>
+                <pre id="package-snippet"><code>{
+  "name": "myapp",
+  "dependencies": {
+    "web": "1.0.0",
+    "utils": "2.1.0"
+  }
+}</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="cli" class="section">
+            <div class="section-head">
+              <p class="eyebrow">CLI</p>
+              <h2>Как запускать и проверять Fluxa</h2>
+            </div>
+            <div class="card-grid three">
+              <article class="info-card command-card">
+                <span class="command-title">Запуск</span>
+                <pre><code>fluxa run app.flx</code></pre>
+              </article>
+              <article class="info-card command-card">
+                <span class="command-title">Проверка</span>
+                <pre><code>fluxa check app.flx</code></pre>
+              </article>
+              <article class="info-card command-card">
+                <span class="command-title">Сборка</span>
+                <pre><code>fluxa build app.flx</code></pre>
+              </article>
+              <article class="info-card command-card">
+                <span class="command-title">Установка пакета</span>
+                <pre><code>fluxa install web</code></pre>
+              </article>
+              <article class="info-card command-card">
+                <span class="command-title">Удаление пакета</span>
+                <pre><code>fluxa remove web</code></pre>
+              </article>
+              <article class="info-card command-card">
+                <span class="command-title">Версия</span>
+                <pre><code>fluxa version</code></pre>
+              </article>
+            </div>
+            <div class="article-card">
+              <p>
+                Команда <code>check</code> удобна для редактора и обучения: она
+                проверяет синтаксис и правило <code>main</code> без создания лишних файлов.
+              </p>
+            </div>
+          </section>
+
+          <section id="full-example" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Пример</p>
+              <h2>Полный пример программы</h2>
+            </div>
+            <div class="code-panel wide">
+              <div class="code-topline">
+                <span>full_example.flx</span>
+                <button class="copy-button" data-copy-target="full-snippet">Скопировать</button>
+              </div>
+              <pre id="full-snippet"><code>import json
+import arrays
+import io
+import asyncs
+
+async func process_data(data: List&lt;Any&gt;) -&gt; List&lt;Float&gt;:
+    let nums = arrays.array(data)
+    let processed = nums * 2 + 1
+    await asyncs.sleep(0.1)
+    return processed.to_list()
+
+func main() -&gt; Void:
+    try:
+        let json_text = io.read("data.json")
+        let data: Map&lt;String, Any&gt; = json.parse(json_text)
+        let values: List&lt;Any&gt; = data["values"]
+        
+        let result = await process_data(values)
+        
+        let output = {"processed": result}
+        io.write("result.json", json.stringify(output))
+        
+        print("Data processed and saved!")
+    catch e:
+        print("Error: " + e.message)</code></pre>
+            </div>
+          </section>
+
+          <section id="examples" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Практика</p>
+              <h2>Что потрогать дальше</h2>
+            </div>
+            <div class="card-grid three">
+              <article class="info-card">
+                <h3>Hello World</h3>
+                <p>Открой <code>examples/hello.flx</code> и запусти его.</p>
+              </article>
+              <article class="info-card">
+                <h3>Калькулятор</h3>
+                <p>Изучи функции и типы в <code>examples/calculator.flx</code>.</p>
+              </article>
+              <article class="info-card">
+                <h3>Калькулятор</h3>
+                <p>Интерактивный калькулятор в <code>examples/calculator.flx</code>.</p>
+              </article>
+              <article class="info-card">
+                <h3>Async</h3>
+                <p>Посмотри работу ожидания в <code>examples/async_demo.flx</code>.</p>
+              </article>
+              <article class="info-card">
+                <h3>Полный пример</h3>
+                <p>Смотри <code>full_example.flx</code> с структурами, списками и async.</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="./main.js"></script>
+  </body>
+</html>
