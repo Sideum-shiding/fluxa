@@ -296,9 +296,14 @@ Fluxa includes a comprehensive standard library with modules for common tasks:
 
 ### Package management
 
-- `fluxa install package`
-- `fluxa remove package`
-- Dependencies in `fluxa.json`
+- Package registry is a text file: `fluxa-packages.txt` (or `text.txt` in this repo).
+  - Each line can be either `package-name` or `fluxa install package-name`
+- `fluxa install --list` to print available packages from the registry
+- `fluxa install <name>` installs a package as a Fluxa module file:
+  - Global: `%FLUXA_HOME%\\lib` (recommended)
+  - Local: `./fluxa_modules` (use `--local`)
+- `fluxa remove <name>` removes an installed package module file
+- Note: today packages are installed as placeholder `.flx` modules you can replace with real Fluxa code.
 
 ## CLI
 
@@ -308,6 +313,8 @@ fluxa run app.flx          # explicit run
 fluxa check app.flx        # validate syntax
 fluxa build app.flx        # build to JSON
 fluxa install package      # install package
+fluxa install --list       # list available packages
+fluxa install --local pkg  # install into ./fluxa_modules
 fluxa remove package       # remove package
 fluxa version              # show version
 ```

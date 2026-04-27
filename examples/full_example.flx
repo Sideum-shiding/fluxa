@@ -1,16 +1,16 @@
-import asyncs
+import fluxaui
 
-async func main() -> Void:
-    let task1: String = "Learn Fluxa"
-    let task2: String = "Build app"
-    
-    print("Enter your name:")
-    let name: String = input("")
-    
-    await process_task(task1)
-    await process_task(task2)
-    print("Hello " + name + ", all tasks processed!")
+func main() -> Void:
+    fluxaui.title("Full Fluxa Example")
+    fluxaui.text("This program uses main-first execution, FluxaUI, and cin().")
 
-async func process_task(task: String) -> Void:
-    print("Processing " + task)
-    await asyncs.sleep(0.5)
+    fluxaui.section("Input")
+    let name: String = cin({Your name})
+    let age: Int = cin({Your age})
+    let likes_fluxa: Bool = cin({Do you like Fluxa? true/false})
+
+    fluxaui.section("Result")
+    fluxaui.field("Name", name)
+    fluxaui.field("Age", age)
+    fluxaui.field("Likes Fluxa", likes_fluxa)
+    fluxaui.success("Done")

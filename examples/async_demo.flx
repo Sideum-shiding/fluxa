@@ -1,9 +1,10 @@
+import asyncs
+
 async func main() -> Void:
     let message: String = await fetch_message()
     print(message)
 
 async func fetch_message() -> String:
-    import asyncs
     print("Loading...")
     await asyncs.sleep(1.0)
     return "Data received"

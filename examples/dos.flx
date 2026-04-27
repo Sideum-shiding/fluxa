@@ -1,0 +1,41 @@
+import math
+import fluxaui
+
+func main() -> Void:
+    fluxaui.title("Калькулятор дискриминанта")
+    print("Квадратное уравнение вида: ax^2 + bx + c = 0")
+
+    let a: Float = fluxaui.ask_float("Введите a")
+    let b: Float = fluxaui.ask_float("Введите b")
+    let c: Float = fluxaui.ask_float("Введите c")
+
+    if a == 0.0:
+        print("[ошибка] Коэффициент a не может быть равен 0")
+    else:
+        solve(a, b, c)
+
+    print("")
+
+func solve(a: Float, b: Float, c: Float) -> Void:
+    let d: Float = b * b - 4.0 * a * c
+
+    fluxaui.section("Уравнение")
+    fluxaui.field("a", a)
+    fluxaui.field("b", b)
+    fluxaui.field("c", c)
+    fluxaui.field("Дискриминант D", d)
+
+    if d > 0.0:
+        let x1: Float = (0.0 - b + math.sqrt(d)) / (2.0 * a)
+        let x2: Float = (0.0 - b - math.sqrt(d)) / (2.0 * a)
+        fluxaui.section("Результат: два корня")
+        fluxaui.field("x1", x1)
+        fluxaui.field("x2", x2)
+    else:
+        if d == 0.0:
+            let x: Float = (0.0 - b) / (2.0 * a)
+            fluxaui.section("Результат: один корень")
+            fluxaui.field("x", x)
+        else:
+            fluxaui.section("Результат")
+            print("  Нет действительных корней (D < 0)")

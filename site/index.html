@@ -274,26 +274,20 @@ struct User:
                   <span>fluxaui.flx</span>
                   <button class="copy-button" data-copy-target="ui-snippet">Скопировать</button>
                 </div>
-                <pre id="ui-snippet"><code>import strings
+                <pre id="ui-snippet"><code>func main() -&gt; Void:
+    import fluxaui
 
-func line(width: Int) -&gt; String:
-    import strings
-    return strings.repeat("=", width)
+    fluxaui.title("Fluxa UI Demo")
+    fluxaui.text("Library: fluxaui")
 
-func title(text: String) -&gt; Void:
-    print("")
-    print(line(52))
-    print("  " + text)
-    print(line(52))
+    let name: String = fluxaui.ask_string("Your name")
+    let age: Int = fluxaui.ask_int("Your age")
+    let ok: Bool = fluxaui.ask_bool("Continue?")
 
-func prompt(label: String) -&gt; String:
-    return input(label + ": ")
-
-func main() -&gt; Void:
-    let x: Int = 0
-    let input_str: String = prompt("Enter a number")
-    x = input_str.to_int()
-    print("[ok] You entered: " + x.to_string())</code></pre>
+    fluxaui.section("Result")
+    fluxaui.field("Name", name)
+    fluxaui.field("Age", age)
+    fluxaui.field("Ok", ok)</code></pre>
               </div>
             </div>
             <div class="lesson-list">
@@ -448,6 +442,41 @@ func main() -&gt; Void:
     let doubled = nums.map(x -&gt; x * 2)
     print(doubled)</code></pre>
               </article>
+            </div>
+          </section>
+
+          <section id="input" class="section">
+            <div class="section-head">
+              <p class="eyebrow">Input</p>
+              <h2>Ввод от пользователя: <code>cin</code></h2>
+            </div>
+            <div class="two-column">
+              <div class="article-card">
+                <p>
+                  Fluxa поддерживает ввод через <code>cin</code>. Это выражение, поэтому его удобно
+                  использовать прямо при объявлении переменной. Если переменная объявлена с типом
+                  <code>Int</code>, <code>Float</code> или <code>Bool</code>, ввод автоматически приводится
+                  к нужному типу.
+                </p>
+                <p>
+                  Для подсказки можно писать обычную строку <code>"Prompt"</code> или braced-строку
+                  <code>{Prompt}</code> без кавычек.
+                </p>
+              </div>
+              <div class="code-panel">
+                <div class="code-topline">
+                  <span>cin.flx</span>
+                  <button class="copy-button" data-copy-target="cin-snippet">Скопировать</button>
+                </div>
+                <pre id="cin-snippet"><code>func main() -&gt; Void:
+    let name: String = cin({Your name})
+    let age: Int = cin({Your age})
+    let ok: Bool = cin({Continue? true/false})
+
+    print("Name =", name)
+    print("Age =", age)
+    print("Ok =", ok)</code></pre>
+              </div>
             </div>
           </section>
 

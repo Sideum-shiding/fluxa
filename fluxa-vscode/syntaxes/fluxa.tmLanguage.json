@@ -40,7 +40,7 @@
       "patterns": [
         {
           "name": "keyword.control.fluxa",
-          "match": "\\b(let|func|async|await|return|if|else|while|for|in|import|from|struct)\\b"
+          "match": "\\b(let|func|async|await|return|if|elif|else|while|for|in|import|from|struct)\\b"
         },
         {
           "name": "constant.language.fluxa",

@@ -724,6 +724,18 @@ static TokenList lex_expression(const char *file_path, int line, const char *tex
             i++;
             continue;
         }
+        if (c == '{') {
+            // Braced string literal: {some text}. This is a Fluxa convenience for prompts.
+            i++;
+            int start = i;
+            while (text[i] && text[i] != '}') i++;
+            if (!text[i]) {
+                fatal_error(file_path, line, "Unterminated braced string literal.", "Close it with `}`.");
+            }
+            token_list_push(&list, make_token("str", substring(text + start, i - start)));
+            i++;
+            continue;
+        }
         if ((c == '=' || c == '!' || c == '>' || c == '<') && text[i + 1] == '=') {
             char pair[3] = {c, '=', '\0'};
             token_list_push(&list, make_token(pair, pair));
@@ -951,11 +963,21 @@ static int is_identifier_name(const char *text) {
 }
 
 static StatementList parse_block(Parser *parser, int *index, int indent, int strict);
+static void skip_blank_and_comment(Parser *parser, int *index);
+static int is_at_indent(Parser *parser, int index, int indent);
+static int starts_with_keyword(const char *trimmed, const char *keyword_with_space_or_colon);
 
 static Statement *parse_statement(Parser *parser, int *index, int indent) {
     char *line = parser->lines[*index];
     int line_no = *index + 1;
     char *trimmed = str_trim(line);
+
+    if (strcmp(trimmed, "else:") == 0 || starts_with(trimmed, "else ")) {
+        fatal_error(parser->file_path, line_no, "`else` must follow an `if` block.", "Use `else:` right after an `if` or `elif` block.");
+    }
+    if (starts_with(trimmed, "elif ")) {
+        fatal_error(parser->file_path, line_no, "`elif` must follow an `if` block.", "Use `elif condition:` right after an `if` or `elif` block.");
+    }
 
     if (starts_with(trimmed, "import ")) {
         Statement *stmt = stmt_new(STMT_IMPORT, parser->file_path, line_no);
@@ -1134,16 +1156,48 @@ static Statement *parse_statement(Parser *parser, int *index, int indent) {
         }
         int child_indent = count_indent(parser->lines[*index]);
         stmt->as.if_stmt.then_block = parse_block(parser, index, child_indent, 1);
-        if (*index < parser->line_count) {
-            char *next = parser->lines[*index];
-            if (!is_blank_or_comment(next) && count_indent(next) == indent && strcmp(str_trim(next), "else:") == 0) {
+        // Parse chained elif/else blocks at the same indentation level.
+        Statement *current = stmt;
+        while (*index < parser->line_count) {
+            skip_blank_and_comment(parser, index);
+            if (*index >= parser->line_count) break;
+            if (!is_at_indent(parser, *index, indent)) break;
+
+            char *next_trimmed = str_trim(parser->lines[*index]);
+            if (starts_with(next_trimmed, "elif ")) {
+                char *elif_body = clone_str(next_trimmed + 5);
+                if (!ends_with(elif_body, ":")) {
+                    fatal_error(parser->file_path, *index + 1, "Invalid elif statement.", "Use: elif condition:");
+                }
+                elif_body[strlen(elif_body) - 1] = '\0';
+
+                Statement *elif_stmt = stmt_new(STMT_IF, parser->file_path, *index + 1);
+                elif_stmt->as.if_stmt.condition = parse_expression_text(parser->file_path, *index + 1, str_trim(elif_body));
                 (*index)++;
+                if (*index >= parser->line_count || count_indent(parser->lines[*index]) <= indent) {
+                    fatal_error(parser->file_path, *index, "Expected an indented block.", "Add an indented block after the line ending with `:`.");
+                }
+                int elif_indent = count_indent(parser->lines[*index]);
+                elif_stmt->as.if_stmt.then_block = parse_block(parser, index, elif_indent, 1);
+
+                current->as.if_stmt.has_else = 1;
+                statement_list_push(&current->as.if_stmt.else_block, elif_stmt);
+                current = elif_stmt;
+                continue;
+            }
+
+            if (strcmp(next_trimmed, "else:") == 0) {
+                (*index)++;
+                skip_blank_and_comment(parser, index);
                 if (*index >= parser->line_count || count_indent(parser->lines[*index]) <= indent) {
                     fatal_error(parser->file_path, line_no, "Expected an indented block.", "Add an indented block after `else:`.");
                 }
-                stmt->as.if_stmt.has_else = 1;
-                stmt->as.if_stmt.else_block = parse_block(parser, index, count_indent(parser->lines[*index]), 1);
+                current->as.if_stmt.has_else = 1;
+                current->as.if_stmt.else_block = parse_block(parser, index, count_indent(parser->lines[*index]), 1);
+                break;
             }
+
+            break;
         }
         return stmt;
     }
@@ -1202,6 +1256,22 @@ static Statement *parse_statement(Parser *parser, int *index, int indent) {
     return stmt;
 }
 
+static void skip_blank_and_comment(Parser *parser, int *index) {
+    while (*index < parser->line_count && is_blank_or_comment(parser->lines[*index])) {
+        (*index)++;
+    }
+}
+
+static int is_at_indent(Parser *parser, int index, int indent) {
+    if (index < 0 || index >= parser->line_count) return 0;
+    if (is_blank_or_comment(parser->lines[index])) return 0;
+    return count_indent(parser->lines[index]) == indent;
+}
+
+static int starts_with_keyword(const char *trimmed, const char *keyword_with_space_or_colon) {
+    return starts_with(trimmed, keyword_with_space_or_colon);
+}
+
 static StatementList parse_block(Parser *parser, int *index, int indent, int strict) {
     StatementList list = {0};
     while (*index < parser->line_count) {
@@ -1251,8 +1321,64 @@ static FunctionDef *find_main_function(Module *module) {
     return NULL;
 }
 
+static void validate_imports_top_only(StatementList *stmts) {
+    int seen_non_import = 0;
+    for (int i = 0; i < stmts->count; i++) {
+        Statement *stmt = stmts->items[i];
+        if (stmt->kind == STMT_IMPORT || stmt->kind == STMT_FROM_IMPORT) {
+            if (seen_non_import) {
+                fatal_error(
+                    stmt->file_path,
+                    stmt->line,
+                    "Imports must be at the top of the file.",
+                    "Move all `import ...` and `from ... import ...` lines to the first lines of the file."
+                );
+            }
+        } else {
+            seen_non_import = 1;
+        }
+    }
+}
+
+static void validate_no_nested_imports(Module *module) {
+    for (int i = 0; i < module->statements.count; i++) {
+        Statement *stmt = module->statements.items[i];
+        if (stmt->kind == STMT_FUNC) {
+            for (int j = 0; j < stmt->as.func_stmt.body.count; j++) {
+                Statement *inner = stmt->as.func_stmt.body.items[j];
+                if (inner->kind == STMT_IMPORT || inner->kind == STMT_FROM_IMPORT) {
+                    fatal_error(
+                        inner->file_path,
+                        inner->line,
+                        "Imports are only allowed at the top of the file.",
+                        "Move this import to the first lines of the file."
+                    );
+                }
+            }
+        }
+        if (stmt->kind == STMT_STRUCT) {
+            for (int m = 0; m < stmt->as.struct_stmt.method_count; m++) {
+                FunctionDef *method = stmt->as.struct_stmt.methods[m];
+                for (int j = 0; j < method->body.count; j++) {
+                    Statement *inner = method->body.items[j];
+                    if (inner->kind == STMT_IMPORT || inner->kind == STMT_FROM_IMPORT) {
+                        fatal_error(
+                            inner->file_path,
+                            inner->line,
+                            "Imports are only allowed at the top of the file.",
+                            "Move this import to the first lines of the file."
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 static void validate_module_layout(Module *module) {
     FunctionDef *main_def = find_main_function(module);
+    validate_imports_top_only(&module->statements);
+    validate_no_nested_imports(module);
     for (int i = 0; i < module->statements.count; i++) {
         Statement *stmt = module->statements.items[i];
         if (!is_declaration_statement(stmt) && main_def == NULL) {
@@ -1273,30 +1399,41 @@ static FunctionDef *validate_entry_module(Module *module) {
         fatal_error(module->file_path, 1, "Entry file is empty.", "Start the file with `func main() -> Void:`.");
     }
 
-    Statement *first = NULL;
-    for (int i = 0; i < module->statements.count; i++) {
-        Statement *stmt = module->statements.items[i];
+    int idx = 0;
+    while (idx < module->statements.count) {
+        Statement *stmt = module->statements.items[idx];
         if (stmt->kind == STMT_IMPORT || stmt->kind == STMT_FROM_IMPORT) {
+            idx++;
             continue;
         }
-        first = stmt;
         break;
     }
-    if (!first) {
-        fatal_error(module->file_path, 1, "Entry file must contain `main`.", "Add `func main() -> Void:` or `async func main() -> Void:`.");
+
+    if (idx >= module->statements.count) {
+        fatal_error(module->file_path, 1, "Entry file must contain `main`.", "Add `func main() -> Void:` or `async func main() -> Void:` after the imports.");
     }
-    if (first->kind != STMT_FUNC || strcmp(first->as.func_stmt.name, "main") != 0) {
+
+    Statement *entry = module->statements.items[idx];
+    if (entry->kind != STMT_FUNC || strcmp(entry->as.func_stmt.name, "main") != 0) {
         fatal_error(
-            first->file_path,
-            first->line,
+            entry->file_path,
+            entry->line,
             "The entry file must have `main` as the first non-import statement.",
             "Make the first non-import top-level statement `func main() -> Void:` or `async func main() -> Void:`."
         );
     }
 
-    for (int i = 1; i < module->statements.count; i++) {
+    for (int i = idx + 1; i < module->statements.count; i++) {
         Statement *stmt = module->statements.items[i];
-        if (!is_declaration_statement(stmt)) {
+        if (stmt->kind == STMT_IMPORT || stmt->kind == STMT_FROM_IMPORT) {
+            fatal_error(
+                stmt->file_path,
+                stmt->line,
+                "Imports must be at the top of the file.",
+                "Move this import above `main`."
+            );
+        }
+        if (!(stmt->kind == STMT_FUNC || stmt->kind == STMT_STRUCT)) {
             fatal_error(
                 stmt->file_path,
                 stmt->line,
@@ -1306,7 +1443,7 @@ static FunctionDef *validate_entry_module(Module *module) {
         }
     }
 
-    return &first->as.func_stmt;
+    return &entry->as.func_stmt;
 }
 
 static Value eval_expression(Interpreter *interpreter, Environment *env, Expression *expr);
@@ -1348,6 +1485,12 @@ static Value builtin_input(Interpreter *interpreter, Environment *env, Value *ar
         len--;
     }
     return make_string(buffer);
+}
+
+static Value builtin_cin(Interpreter *interpreter, Environment *env, Value *args, int argc, const char *file_path, int line) {
+    // cin(prompt?) returns a String. The runtime also supports auto-conversion for
+    // `let x: Int/Float/Bool/String = cin(...)` and `x = cin(...)`.
+    return builtin_input(interpreter, env, args, argc, file_path, line);
 }
 
 static Value builtin_range(Interpreter *interpreter, Environment *env, Value *args, int argc, const char *file_path, int line) {
@@ -1437,6 +1580,7 @@ static RuntimeModule *runtime_module_new(const char *name) {
 static void seed_stdlib(Environment *env) {
     env_define(env, "print", make_builtin("print", builtin_print), "Any");
     env_define(env, "input", make_builtin("input", builtin_input), "Any");
+    env_define(env, "cin", make_builtin("cin", builtin_cin), "Any");
     env_define(env, "range", make_builtin("range", builtin_range), "Any");
     env_define(env, "run", make_builtin("run", builtin_run), "Any");
 
@@ -1465,6 +1609,66 @@ static void seed_stdlib(Environment *env) {
     env_define(env, "asyncs", make_module_value(async_mod), "Any");
 }
 
+static int expr_is_cin_call(Expression *expr, ExpressionList **args_out) {
+    if (!expr || expr->kind != EXPR_CALL) return 0;
+    if (!expr->as.call.callee || expr->as.call.callee->kind != EXPR_IDENTIFIER) return 0;
+    if (strcmp(expr->as.call.callee->as.identifier.name, "cin") != 0) return 0;
+    if (args_out) *args_out = &expr->as.call.args;
+    return 1;
+}
+
+static Value eval_cin_string(Interpreter *interpreter, Environment *env, ExpressionList *args, const char *file_path, int line) {
+    if (args->count > 1) {
+        fatal_error(file_path, line, "cin expects zero or one argument.", "Use cin({Prompt}) or cin(\"Prompt\").");
+    }
+    Value prompt_arg = make_string("");
+    if (args->count == 1) {
+        prompt_arg = eval_expression(interpreter, env, args->items[0]);
+    }
+    Value argv[1];
+    argv[0] = prompt_arg;
+    return builtin_cin(interpreter, env, argv, args->count == 1 ? 1 : 0, file_path, line);
+}
+
+static Value coerce_cin_string_to_type(const char *type_name, const char *text, const char *file_path, int line) {
+    if (!type_name || strcmp(type_name, "Any") == 0) {
+        return make_string(text);
+    }
+    if (strcmp(type_name, "String") == 0) {
+        return make_string(text);
+    }
+    if (strcmp(type_name, "Int") == 0) {
+        char *end = NULL;
+        long v = strtol(text, &end, 10);
+        if (!end || *str_trim(end) != '\0') {
+            fatal_error(file_path, line, "Invalid Int input.", "Enter a whole number like 12.");
+        }
+        return make_int((int)v);
+    }
+    if (strcmp(type_name, "Float") == 0) {
+        char *end = NULL;
+        double v = strtod(text, &end);
+        if (!end || *str_trim(end) != '\0') {
+            fatal_error(file_path, line, "Invalid Float input.", "Enter a number like 3.14.");
+        }
+        return make_float(v);
+    }
+    if (strcmp(type_name, "Bool") == 0) {
+        char *lower = clone_str(text);
+        for (int i = 0; lower[i]; i++) lower[i] = (char)tolower((unsigned char)lower[i]);
+        if (strcmp(lower, "true") == 0 || strcmp(lower, "1") == 0 || strcmp(lower, "yes") == 0 || strcmp(lower, "y") == 0) {
+            return make_bool(1);
+        }
+        if (strcmp(lower, "false") == 0 || strcmp(lower, "0") == 0 || strcmp(lower, "no") == 0 || strcmp(lower, "n") == 0) {
+            return make_bool(0);
+        }
+        fatal_error(file_path, line, "Invalid Bool input.", "Enter true/false or 1/0.");
+    }
+
+    fatal_error(file_path, line, "cin cannot convert to this type.", "Use String/Int/Float/Bool with cin(...).");
+    return make_null();
+}
+
 static char *read_file_text(const char *path) {
     FILE *f = fopen(path, "rb");
     if (!f) return NULL;
@@ -1484,6 +1688,40 @@ static char *dirname_of(const char *path) {
     if (!slash) slash = strrchr(copy, '/');
     if (slash) *slash = '\0';
     return copy;
+}
+
+static int file_exists(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    fclose(f);
+    return 1;
+}
+
+static int try_module_in_dir(char *out, size_t out_size, const char *dir, const char *module_name) {
+    if (!dir || dir[0] == '\0') return 0;
+    snprintf(out, out_size, "%s\\%s.flx", dir, module_name);
+    return file_exists(out);
+}
+
+static int try_module_in_fluxa_path(char *out, size_t out_size, const char *module_name) {
+    const char *p = getenv("FLUXA_PATH");
+    if (!p || p[0] == '\0') return 0;
+
+    const char *start = p;
+    while (1) {
+        const char *end = strchr(start, ';');
+        size_t len = end ? (size_t)(end - start) : strlen(start);
+        if (len > 0 && len < MAX_PATH) {
+            char dir[MAX_PATH];
+            memcpy(dir, start, len);
+            dir[len] = '\0';
+            char *trim = str_trim(dir);
+            if (try_module_in_dir(out, out_size, trim, module_name)) return 1;
+        }
+        if (!end) break;
+        start = end + 1;
+    }
+    return 0;
 }
 
 static Module *interpreter_load_module(Interpreter *interpreter, const char *path) {
@@ -1515,16 +1753,49 @@ static Value import_module(Interpreter *interpreter, Environment *env, const cha
 
     char *base = dirname_of(requester_path);
     char full[MAX_PATH];
-    snprintf(full, sizeof(full), "%s\\%s.flx", base, module_name);
     Module *module = NULL;
-    char *source = read_file_text(full);
-    if (source) {
-        free(source);
+
+    // Search order:
+    // 1) Next to the requesting file (project-local modules)
+    // 1b) <requester_dir>\fluxa_modules (project-local packages)
+    // 2) FLUXA_PATH (user-installed/custom module dirs, semicolon-separated)
+    // 3) <exe_dir>\lib (standard installed libs)
+    // 4) <home>\lib (when installed into <home>\bin + <home>\lib)
+    // 5) <exe_dir> (backwards compatible)
+    if (try_module_in_dir(full, sizeof(full), base, module_name)) {
         module = interpreter_load_module(interpreter, full);
     } else {
-        snprintf(full, sizeof(full), "%s\\%s.flx", interpreter->exe_dir, module_name);
-        module = interpreter_load_module(interpreter, full);
+        char local_pkgs[MAX_PATH];
+        snprintf(local_pkgs, sizeof(local_pkgs), "%s\\fluxa_modules", base);
+        if (try_module_in_dir(full, sizeof(full), local_pkgs, module_name)) {
+            module = interpreter_load_module(interpreter, full);
+        } else if (try_module_in_fluxa_path(full, sizeof(full), module_name)) {
+            module = interpreter_load_module(interpreter, full);
+        } else {
+            char libdir[MAX_PATH];
+            snprintf(libdir, sizeof(libdir), "%s\\lib", interpreter->exe_dir);
+            if (try_module_in_dir(full, sizeof(full), libdir, module_name)) {
+                module = interpreter_load_module(interpreter, full);
+            } else {
+                // If installed into <home>\bin and <home>\lib, also search the sibling lib/.
+                char *parent = dirname_of(interpreter->exe_dir);
+                char homelib[MAX_PATH];
+                snprintf(homelib, sizeof(homelib), "%s\\lib", parent);
+                free(parent);
+                if (try_module_in_dir(full, sizeof(full), homelib, module_name)) {
+                    module = interpreter_load_module(interpreter, full);
+                } else if (try_module_in_dir(full, sizeof(full), interpreter->exe_dir, module_name)) {
+                    module = interpreter_load_module(interpreter, full);
+                } else {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg), "Module `%s` not found.", module_name);
+                    fatal_error(requester_path, line, msg,
+                                "Place `<module>.flx` next to your file, or install it into `%FLUXA_HOME%\\lib` (or add a directory to `FLUXA_PATH`).");
+                }
+            }
+        }
     }
+    free(base);
     Environment *module_env = env_new(NULL);
     seed_stdlib(module_env);
     execute_block(interpreter, module_env, &module->statements);
@@ -1727,7 +1998,15 @@ static void execute_statement(Interpreter *interpreter, Environment *env, Statem
             return;
         }
         case STMT_VAR: {
-            Value value = eval_expression(interpreter, env, stmt->as.var_stmt.expr);
+            Value value;
+            ExpressionList *cin_args = NULL;
+            if (expr_is_cin_call(stmt->as.var_stmt.expr, &cin_args)) {
+                Value cin_value = eval_cin_string(interpreter, env, cin_args, stmt->file_path, stmt->line);
+                const char *declared = stmt->as.var_stmt.type_name ? stmt->as.var_stmt.type_name : "Any";
+                value = coerce_cin_string_to_type(declared, cin_value.as.string_value, stmt->file_path, stmt->line);
+            } else {
+                value = eval_expression(interpreter, env, stmt->as.var_stmt.expr);
+            }
             if (!type_matches(stmt->as.var_stmt.type_name, value)) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Type mismatch for `%s`: expected %s, got %s.", stmt->as.var_stmt.name, stmt->as.var_stmt.type_name, value_type_name(value));
@@ -1737,8 +2016,19 @@ static void execute_statement(Interpreter *interpreter, Environment *env, Statem
             return;
         }
         case STMT_ASSIGN:
-            env_assign(env, stmt->as.assign_stmt.name, eval_expression(interpreter, env, stmt->as.assign_stmt.expr), stmt->file_path, stmt->line);
+        {
+            Variable *slot = env_find(env, stmt->as.assign_stmt.name);
+            Value value;
+            ExpressionList *cin_args = NULL;
+            if (slot && expr_is_cin_call(stmt->as.assign_stmt.expr, &cin_args) && slot->type_name && strcmp(slot->type_name, "Any") != 0) {
+                Value cin_value = eval_cin_string(interpreter, env, cin_args, stmt->file_path, stmt->line);
+                value = coerce_cin_string_to_type(slot->type_name, cin_value.as.string_value, stmt->file_path, stmt->line);
+            } else {
+                value = eval_expression(interpreter, env, stmt->as.assign_stmt.expr);
+            }
+            env_assign(env, stmt->as.assign_stmt.name, value, stmt->file_path, stmt->line);
             return;
+        }
         case STMT_EXPR:
             (void)eval_expression(interpreter, env, stmt->as.expr_stmt.expr);
             return;
@@ -1855,7 +2145,377 @@ static char *path_join(const char *a, const char *b) {
     return out;
 }
 
+static int dir_exists(const char *path) {
+    DWORD attrs = GetFileAttributesA(path);
+    if (attrs == INVALID_FILE_ATTRIBUTES) return 0;
+    return (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+static void ensure_dir_exists(const char *path, const char *file_path, int line) {
+    if (dir_exists(path)) return;
+    if (CreateDirectoryA(path, NULL)) return;
+    DWORD err = GetLastError();
+    if (err == ERROR_ALREADY_EXISTS) return;
+    {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Cannot create directory: %s", path);
+        fatal_error(file_path, line, msg, "Check permissions and try again.");
+    }
+}
+
+static char *fluxa_home_dir(Interpreter *interpreter) {
+    const char *home = getenv("FLUXA_HOME");
+    if (home && home[0] != '\0') return clone_str(home);
+
+    // If we're running from <home>\bin, treat <home> as the directory above exe_dir.
+    char *copy = clone_str(interpreter->exe_dir);
+    char *slash = strrchr(copy, '\\');
+    if (!slash) slash = strrchr(copy, '/');
+    if (slash) {
+        char *leaf = slash + 1;
+        if (_stricmp(leaf, "bin") == 0) {
+            *slash = '\0';
+            return copy;
+        }
+    }
+    free(copy);
+    return clone_str(interpreter->exe_dir);
+}
+
+static char *fluxa_global_lib_dir(Interpreter *interpreter) {
+    char *home = fluxa_home_dir(interpreter);
+    char *lib = path_join(home, "lib");
+    free(home);
+    return lib;
+}
+
+static char *fluxa_local_pkg_dir(void) {
+    char cwd[MAX_PATH];
+    DWORD got = GetCurrentDirectoryA(MAX_PATH, cwd);
+    if (got == 0 || got >= MAX_PATH) {
+        fatal_error("<cli>", 1, "Cannot get current directory.", "Run the command from a normal folder.");
+    }
+    char out[MAX_PATH];
+    snprintf(out, sizeof(out), "%s\\fluxa_modules", cwd);
+    return clone_str(out);
+}
+
+static char *find_registry_file(Interpreter *interpreter) {
+    char cwd[MAX_PATH];
+    DWORD got = GetCurrentDirectoryA(MAX_PATH, cwd);
+    if (got == 0 || got >= MAX_PATH) return NULL;
+
+    char cand[MAX_PATH];
+    snprintf(cand, sizeof(cand), "%s\\fluxa-packages.txt", cwd);
+    if (file_exists(cand)) return clone_str(cand);
+    snprintf(cand, sizeof(cand), "%s\\text.txt", cwd);
+    if (file_exists(cand)) return clone_str(cand);
+
+    char *home = fluxa_home_dir(interpreter);
+    snprintf(cand, sizeof(cand), "%s\\fluxa-packages.txt", home);
+    if (file_exists(cand)) {
+        free(home);
+        return clone_str(cand);
+    }
+    snprintf(cand, sizeof(cand), "%s\\packages.txt", home);
+    if (file_exists(cand)) {
+        free(home);
+        return clone_str(cand);
+    }
+    snprintf(cand, sizeof(cand), "%s\\lib\\fluxa-packages.txt", home);
+    if (file_exists(cand)) {
+        free(home);
+        return clone_str(cand);
+    }
+    free(home);
+    return NULL;
+}
+
+static char *registry_line_to_name(char *line) {
+    char *t = str_trim(line);
+    if (!t || t[0] == '\0') return NULL;
+    if (t[0] == '#') return NULL;
+    if (_strnicmp(t, "fluxa install ", 13) == 0) {
+        t = str_trim(t + 13);
+        if (t[0] == '\0') return NULL;
+    }
+    // only first token (ignore trailing stuff)
+    for (int i = 0; t[i]; i++) {
+        if (isspace((unsigned char)t[i])) {
+            t[i] = '\0';
+            break;
+        }
+    }
+    return t[0] ? t : NULL;
+}
+
+static char *normalize_package_to_module(const char *name) {
+    size_t n = strlen(name);
+    char *tmp = (char *)xmalloc(n + 8);
+    int j = 0;
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)name[i];
+        if (isalnum(c) || c == '_') {
+            tmp[j++] = (char)tolower(c);
+        } else if (c == '-' || c == '.' || isspace(c)) {
+            tmp[j++] = '_';
+        } else {
+            // skip other characters
+        }
+    }
+    tmp[j] = '\0';
+
+    // Collapse repeated '_' and trim leading/trailing '_'
+    int k = 0;
+    int prev_us = 0;
+    for (int i = 0; i < j; i++) {
+        if (tmp[i] == '_') {
+            if (prev_us) continue;
+            prev_us = 1;
+        } else {
+            prev_us = 0;
+        }
+        tmp[k++] = tmp[i];
+    }
+    tmp[k] = '\0';
+
+    while (k > 0 && tmp[0] == '_') {
+        memmove(tmp, tmp + 1, (size_t)k);
+        k--;
+        tmp[k] = '\0';
+    }
+    while (k > 0 && tmp[k - 1] == '_') {
+        tmp[k - 1] = '\0';
+        k--;
+    }
+
+    if (k == 0) {
+        fatal_error("<cli>", 1, "Invalid package name.", "Use letters/numbers and optionally '-' or '_'.");
+    }
+    if (!(isalpha((unsigned char)tmp[0]) || tmp[0] == '_')) {
+        // prefix to make it a valid Fluxa identifier
+        char prefixed[512];
+        snprintf(prefixed, sizeof(prefixed), "pkg_%s", tmp);
+        free(tmp);
+        return clone_str(prefixed);
+    }
+    return tmp;
+}
+
+typedef struct {
+    char **items;
+    int count;
+    int capacity;
+} StringList;
+
+static void string_list_push_unique(StringList *list, const char *s) {
+    for (int i = 0; i < list->count; i++) {
+        if (_stricmp(list->items[i], s) == 0) return;
+    }
+    if (list->count == list->capacity) {
+        list->capacity = list->capacity == 0 ? 64 : list->capacity * 2;
+        list->items = (char **)realloc(list->items, sizeof(char *) * list->capacity);
+    }
+    list->items[list->count++] = clone_str(s);
+}
+
+static int cmp_str_ci(const void *a, const void *b) {
+    const char *aa = *(const char **)a;
+    const char *bb = *(const char **)b;
+    return _stricmp(aa, bb);
+}
+
+static void registry_print_list(const char *registry_path) {
+    char *text = read_file_text(registry_path);
+    if (!text) {
+        fatal_error("<cli>", 1, "Cannot read package registry.", "Check the file path and try again.");
+    }
+    int line_count = 0;
+    char **lines = split_lines(text, &line_count);
+    StringList list = {0};
+    for (int i = 0; i < line_count; i++) {
+        char *name = registry_line_to_name(lines[i]);
+        if (name) string_list_push_unique(&list, name);
+    }
+    if (list.count > 1) {
+        qsort(list.items, (size_t)list.count, sizeof(char *), cmp_str_ci);
+    }
+
+    printf("Available packages (%d):\n", list.count);
+    int limit = list.count;
+    if (limit > 200) limit = 200;
+    for (int i = 0; i < limit; i++) {
+        printf("  %s\n", list.items[i]);
+    }
+    if (list.count > limit) {
+        printf("... and %d more\n", list.count - limit);
+    }
+
+    for (int i = 0; i < list.count; i++) free(list.items[i]);
+    free(list.items);
+    for (int i = 0; i < line_count; i++) free(lines[i]);
+    free(lines);
+    free(text);
+}
+
+static int registry_has_package(const char *registry_path, const char *pkg_name, const char *pkg_norm) {
+    char *text = read_file_text(registry_path);
+    if (!text) return 0;
+    int line_count = 0;
+    char **lines = split_lines(text, &line_count);
+    int found = 0;
+    for (int i = 0; i < line_count && !found; i++) {
+        char *entry = registry_line_to_name(lines[i]);
+        if (!entry) continue;
+        if (_stricmp(entry, pkg_name) == 0) {
+            found = 1;
+            break;
+        }
+        char *entry_norm = normalize_package_to_module(entry);
+        if (_stricmp(entry_norm, pkg_norm) == 0) {
+            found = 1;
+        }
+        free(entry_norm);
+    }
+    for (int i = 0; i < line_count; i++) free(lines[i]);
+    free(lines);
+    free(text);
+    return found;
+}
+
+static void write_placeholder_package_file(const char *dest_path, const char *pkg_name, const char *module_name) {
+    FILE *f = fopen(dest_path, "wb");
+    if (!f) {
+        fatal_error("<cli>", 1, "Cannot write package file.", "Check permissions and try again.");
+    }
+    fprintf(f, "# Fluxa package: %s\n", pkg_name);
+    fprintf(f, "# Module name: %s\n", module_name);
+    fprintf(f, "# Installed by `fluxa install`.\n");
+    fprintf(f, "#\n");
+    fprintf(f, "# This is a placeholder package file. You can replace it with real Fluxa code.\n\n");
+    fprintf(f, "func info() -> String:\n");
+    fprintf(f, "    return \"Installed placeholder package. API is not implemented yet.\"\n\n");
+    fclose(f);
+}
+
+static void cmd_install(Interpreter *interpreter, int argc, char **argv) {
+    int list = 0;
+    int force = 0;
+    int local = 0;
+    const char *pkg = NULL;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--list") == 0 || strcmp(argv[i], "list") == 0) {
+            list = 1;
+        } else if (strcmp(argv[i], "--force") == 0 || strcmp(argv[i], "-f") == 0) {
+            force = 1;
+        } else if (strcmp(argv[i], "--local") == 0) {
+            local = 1;
+        } else if (!pkg) {
+            pkg = argv[i];
+        } else {
+            fatal_error("<cli>", 1, "Too many arguments for install.", "Use: fluxa install <name> [--local] [--force]");
+        }
+    }
+
+    char *registry = find_registry_file(interpreter);
+    if (list || !pkg) {
+        if (!registry) {
+            fatal_error("<cli>", 1, "Package registry not found.", "Create `fluxa-packages.txt` in this folder or in `%FLUXA_HOME%`.");
+        }
+        registry_print_list(registry);
+        free(registry);
+        return;
+    }
+
+    char *pkg_norm = normalize_package_to_module(pkg);
+    if (!registry) {
+        free(pkg_norm);
+        fatal_error("<cli>", 1, "Package registry not found.", "Create `fluxa-packages.txt` in this folder or in `%FLUXA_HOME%`, then run `fluxa install --list`.");
+    }
+    if (!registry_has_package(registry, pkg, pkg_norm)) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Unknown package: %s", pkg);
+        free(registry);
+        free(pkg_norm);
+        fatal_error("<cli>", 1, msg, "Run `fluxa install --list` to see available packages.");
+    }
+    free(registry);
+
+    char *dest_dir = local ? fluxa_local_pkg_dir() : fluxa_global_lib_dir(interpreter);
+    ensure_dir_exists(dest_dir, "<cli>", 1);
+
+    char file_name[MAX_PATH];
+    snprintf(file_name, sizeof(file_name), "%s.flx", pkg_norm);
+    char *dest_path = path_join(dest_dir, file_name);
+
+    if (file_exists(dest_path) && !force) {
+        printf("Package already installed: %s (module: %s)\n", pkg, pkg_norm);
+        free(dest_dir);
+        free(dest_path);
+        free(pkg_norm);
+        return;
+    }
+
+    write_placeholder_package_file(dest_path, pkg, pkg_norm);
+    printf("Installed: %s (module: %s)\n", pkg, pkg_norm);
+    printf("Location: %s\n", dest_dir);
+    printf("Use: import %s\n", pkg_norm);
+
+    free(dest_dir);
+    free(dest_path);
+    free(pkg_norm);
+}
+
+static void cmd_remove(Interpreter *interpreter, int argc, char **argv) {
+    int local = 0;
+    const char *pkg = NULL;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--local") == 0) {
+            local = 1;
+        } else if (!pkg) {
+            pkg = argv[i];
+        } else {
+            fatal_error("<cli>", 1, "Too many arguments for remove.", "Use: fluxa remove <name> [--local]");
+        }
+    }
+
+    if (!pkg) {
+        fatal_error("<cli>", 1, "Missing package name.", "Use: fluxa remove <name>");
+    }
+
+    char *pkg_norm = normalize_package_to_module(pkg);
+    char *dest_dir = local ? fluxa_local_pkg_dir() : fluxa_global_lib_dir(interpreter);
+
+    char file_name[MAX_PATH];
+    snprintf(file_name, sizeof(file_name), "%s.flx", pkg_norm);
+    char *dest_path = path_join(dest_dir, file_name);
+
+    if (!file_exists(dest_path)) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Package is not installed: %s", pkg);
+        free(pkg_norm);
+        free(dest_dir);
+        free(dest_path);
+        fatal_error("<cli>", 1, msg, "Install it first with `fluxa install <name>`.");
+    }
+
+    if (!DeleteFileA(dest_path)) {
+        free(pkg_norm);
+        free(dest_dir);
+        free(dest_path);
+        fatal_error("<cli>", 1, "Cannot remove package file.", "Check permissions and try again.");
+    }
+
+    printf("Removed: %s (module: %s)\n", pkg, pkg_norm);
+    free(pkg_norm);
+    free(dest_dir);
+    free(dest_path);
+}
+
 int main(int argc, char **argv) {
+    SetConsoleOutputCP(65001);
     Interpreter interpreter = {0};
     char exe_path[MAX_PATH];
     GetModuleFileNameA(NULL, exe_path, MAX_PATH);
@@ -1874,6 +2534,9 @@ int main(int argc, char **argv) {
         printf("  fluxa run file.flx\n");
         printf("  fluxa check file.flx\n");
         printf("  fluxa build file.flx\n");
+        printf("  fluxa install <name>\n");
+        printf("  fluxa install --list\n");
+        printf("  fluxa remove <name>\n");
         printf("  fluxa version\n");
         return 0;
     }
@@ -1901,11 +2564,21 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    if (strcmp(argv[1], "install") == 0) {
+        cmd_install(&interpreter, argc, argv);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "remove") == 0) {
+        cmd_remove(&interpreter, argc, argv);
+        return 0;
+    }
+
     if (ends_with(argv[1], ".flx")) {
         run_module(&interpreter, argv[1]);
         return 0;
     }
 
-    fatal_error("<cli>", 1, "Unknown command.", "Use `fluxa run file.flx`, `fluxa check file.flx`, `fluxa build file.flx` or `fluxa version`.");
+    fatal_error("<cli>", 1, "Unknown command.", "Use `fluxa run file.flx`, `fluxa check file.flx`, `fluxa build file.flx`, `fluxa install <name>` or `fluxa version`.");
     return 1;
 }

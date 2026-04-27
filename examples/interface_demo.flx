@@ -1,12 +1,17 @@
-func main() -> Void:
-    import fluxaui
+import fluxaui
 
+func main() -> Void:
     fluxaui.title("Fluxa UI Demo")
     fluxaui.text("This interface is built with the FluxaUI library.")
+
+    let name: String = fluxaui.ask_string("Your name")
+    fluxaui.field("Name", name)
+
     fluxaui.section("Project")
     fluxaui.field("Language", "Fluxa")
     fluxaui.field("Entry point", "main")
     fluxaui.field("Runtime", "Standalone")
+
     fluxaui.section("Status")
     fluxaui.success("Library loaded")
     fluxaui.button("Continue")

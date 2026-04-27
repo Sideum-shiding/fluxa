@@ -1,0 +1,30 @@
+import fluxaui
+
+func main() -> Void:
+    fluxaui.title("Fluxa Calculator (Windows-style TUI)")
+    fluxaui.text("Tip: type operation as +, -, *, /")
+
+    let again: Bool = true
+    while again:
+        fluxaui.section("Input")
+        let a: Float = cin({A: })
+        let op: String = cin({Operation (+ - * /): })
+        let b: Float = cin({B: })
+
+        fluxaui.section("Result")
+
+        if op == "+":
+            fluxaui.field("A + B", a + b)
+        elif op == "-":
+            fluxaui.field("A - B", a - b)
+        elif op == "*":
+            fluxaui.field("A * B", a * b)
+        elif op == "/":
+            if b == 0:
+                fluxaui.error("Division by zero")
+            else:
+                fluxaui.field("A / B", a / b)
+        else:
+            fluxaui.warning("Unknown operation: " + op)
+
+        again = cin({Another? true/false: })

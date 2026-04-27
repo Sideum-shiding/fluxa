@@ -1,17 +1,9 @@
-func main() -> Void:
-    let x: Int = 0
-    let input_str: String = prompt("Enter a number")
-    x = input_str.to_int()
-    success("You entered: " + x.to_string())
-
 import strings
 
 func line(width: Int) -> String:
-    import strings
     return strings.repeat("=", width)
 
 func thin_line(width: Int) -> String:
-    import strings
     return strings.repeat("-", width)
 
 func spacer() -> Void:
@@ -29,10 +21,10 @@ func section(text: String) -> Void:
     print("> " + text)
     print(thin_line(38))
 
-func text(value: String) -> Void:
+func text(value: Any) -> Void:
     print(value)
 
-func field(label: String, value: String) -> Void:
+func field(label: String, value: Any) -> Void:
     print(label + ": " + value)
 
 func button(label: String) -> Void:
@@ -47,7 +39,7 @@ func warning(message: String) -> Void:
 func error(message: String) -> Void:
     print("[error] " + message)
 
-func card(header: String, body: String) -> Void:
+func card(header: String, body: Any) -> Void:
     print("")
     print(line(52))
     print("  " + header)
@@ -56,69 +48,20 @@ func card(header: String, body: String) -> Void:
     print(line(52))
 
 func prompt(label: String) -> String:
-    return input(label + ": ")
+    return cin(label + ": ")
 
-func menu(title_text: String, options: List<String>) -> Int:
-    title(title_text)
-    for i in range(0, options.length):
-        print((i + 1).to_string() + ". " + options[i])
-    spacer()
-    let choice_str = prompt("Choose option (1-" + options.length.to_string() + ")")
-    let choice = choice_str.to_int()
-    if choice < 1 or choice > options.length:
-        error("Invalid choice")
-        return menu(title_text, options)
-    return choice - 1
+func ask_string(label: String) -> String:
+    let value: String = cin(label + ": ")
+    return value
 
-func form(fields: List<String>) -> Map<String, String>:
-    let result: Map<String, String> = {}
-    for field in fields:
-        let value = prompt("Enter " + field)
-        result[field] = value
-    return result
+func ask_int(label: String) -> Int:
+    let value: Int = cin(label + ": ")
+    return value
 
-func progress_bar(current: Int, total: Int, width: Int) -> Void:
-    let percent = (current.to_float() / total.to_float()) * 100.0
-    let filled = (current * width) / total
-    let bar = strings.repeat("█", filled) + strings.repeat("░", width - filled)
-    print("[" + bar + "] " + percent.to_string() + "%")
+func ask_float(label: String) -> Float:
+    let value: Float = cin(label + ": ")
+    return value
 
-func table(headers: List<String>, rows: List<List<String>>) -> Void:
-    # Simple table
-    let col_widths: List<Int> = []
-    for i in range(0, headers.length):
-        col_widths.append(headers[i].length)
-    for row in rows:
-        for i in range(0, row.length):
-            if row[i].length > col_widths[i]:
-                col_widths[i] = row[i].length
-    
-    # Print headers
-    let header_line = ""
-    for i in range(0, headers.length):
-        header_line = header_line + headers[i] + strings.repeat(" ", col_widths[i] - headers[i].length + 2)
-    print(header_line)
-    print(thin_line(header_line.length))
-    
-    # Print rows
-    for row in rows:
-        let row_line = ""
-        for i in range(0, row.length):
-            row_line = row_line + row[i] + strings.repeat(" ", col_widths[i] - row[i].length + 2)
-        print(row_line)
-
-func confirm(message: String) -> Bool:
-    let response = prompt(message + " (y/n)")
-    return response.lower() == "y" or response.lower() == "yes"
-
-func alert(message: String) -> Void:
-    print("")
-    print("! " + message)
-    spacer()
-
-func clear_screen() -> Void:
-    # For Windows
-    print("\x1b[2J\x1b[H")  # ANSI escape, may not work in all terminals
-
-func wait_key() -> Void:
-    prompt("Press Enter to continue")
+func ask_bool(label: String) -> Bool:
+    let value: Bool = cin(label + " (true/false): ")
+    return value
